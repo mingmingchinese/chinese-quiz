@@ -2,11 +2,13 @@
 # 使い方: python3 update.py
 # today.txt を編集してからこのスクリプトを実行してください
 
-import base64, re, os, sys
+import base64, re, os, sys, json
+from datetime import date
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-TODAY_FILE = os.path.join(SCRIPT_DIR, 'today.txt')
-HTML_FILE  = os.path.join(SCRIPT_DIR, 'index.html')
+SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
+TODAY_FILE   = os.path.join(SCRIPT_DIR, 'today.txt')
+HTML_FILE    = os.path.join(SCRIPT_DIR, 'index.html')
+ARCHIVE_FILE = os.path.join(SCRIPT_DIR, 'archive.json')
 
 # --- today.txt を読み込む ---
 config = {}
@@ -88,13 +90,36 @@ html = html[:q_start] + new_questions + html[q_end:]
 with open(HTML_FILE, 'w', encoding='utf-8') as f:
     f.write(html)
 
+# --- archive.json に追記 ---
+archive = []
+if os.path.exists(ARCHIVE_FILE):
+    with open(ARCHIVE_FILE, encoding='utf-8') as f:
+        archive = json.load(f)
+
+archive.append({
+    'date':          str(date.today()),
+    'text':          config['TEXT'],
+    'pinyin':        config['PINYIN'],
+    'japanese':      config['JAPANESE'],
+    'answer':        answer['ch'],
+    'answerPinyin':  answer['py'],
+    'answerJapanese':answer['ja'],
+    'choices':       choices,
+    'correctIndex':  correct_index,
+    'audio':         audio_b64,
+})
+
+with open(ARCHIVE_FILE, 'w', encoding='utf-8') as f:
+    json.dump(archive, f, ensure_ascii=False, indent=2)
+
 print('index.html を更新しました！')
 print(f'  問題: {config["TEXT"][:30]}...')
 print(f'  正解: {answer["ch"]}（{answer["py"]}）{answer["ja"]}')
+print(f'  保存済み問題数: {len(archive)} 問')
 print()
 print('次のステップ: ターミナルで以下を実行してGitHubにアップしてください')
 print()
 print('  cd ~/Downloads/chinese-quiz')
-print('  git add index.html')
+print('  git add index.html archive.json')
 print('  git commit -m "問題を更新"')
 print('  git push')
