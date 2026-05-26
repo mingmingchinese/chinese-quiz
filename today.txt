@@ -1,37 +1,28 @@
 # 毎日ここを書き換えてください
 # 「#」から始まる行はコメントです（無視されます）
-
 # 音声ファイルのパス（フルパスで書いてください）
-AUDIO: /Users/kawashimamiyuki/Desktop/20260519 .mp3
-
+AUDIO: /Users/kawashimamiyuki/Desktop/20260527.mp3
 # 問題文（中国語）
-TEXT: 夏天很热的时候吃，甜甜的，里面是红色的，很大的水果是什么？
-
+TEXT: 在日本的学校里，午饭的时候喝，白色的，有些人喝了肚子疼，是什么饮料？
 # 問題文（ピンイン）※改行は \n と書く
-PINYIN: Xiàtiān hěn rè de shíhou chī, tián tián de,\nlǐmiàn shì hóngsè de, hěn dà de shuǐguǒ shì shénme?
-
+PINYIN: Zài Rìběn de xuéxiào lǐ, wǔfàn de shíhou hē,\nbáisè de, yǒuxiē rén hē le dùzi téng, shì shénme yǐnliào?
 # 問題文（日本語訳）
-JAPANESE: 夏の暑い日に食べる、甘くて、中が赤くて、とても大きな果物は何ですか？
-
+JAPANESE: 日本の学校で、お昼ごはんのときに飲む、白い色で、飲むとお腹が痛くなる人もいる飲み物は何でしょう？
 # 正解（何番目か。1〜4で指定）
 CORRECT: 2
-
 # 選択肢1
-CHOICE1_CH: 苹果
-CHOICE1_PY: píngguǒ
-CHOICE1_JA: リンゴ
-
+CHOICE1_CH: 水
+CHOICE1_PY: shuǐ
+CHOICE1_JA: 水
 # 選択肢2
-CHOICE2_CH: 西瓜
-CHOICE2_PY: xī guā
-CHOICE2_JA: スイカ
-
+CHOICE2_CH: 牛奶
+CHOICE2_PY: niú nǎi
+CHOICE2_JA: 牛乳
 # 選択肢3
-CHOICE3_CH: 鸡蛋
-CHOICE3_PY: jīdàn
-CHOICE3_JA: 卵
-
+CHOICE3_CH: 茶
+CHOICE3_PY: chá
+CHOICE3_JA: お茶
 # 選択肢4
-CHOICE4_CH: 牛奶
-CHOICE4_PY: niúnǎi
-CHOICE4_JA: 牛乳
+CHOICE4_CH: 咖啡
+CHOICE4_PY: kāfēi
+CHOICE4_JA: コーヒー
