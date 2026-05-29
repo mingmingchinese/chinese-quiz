@@ -480,17 +480,19 @@ function selectAnswer(index) {
     // リスニング後：「テキストパートへ」＋「次の問題へ」
     switchBtn.style.display  = 'block';
     nextBtn.style.display    = 'block';
-    nextBtn.textContent      = '次の問題へ →';
+    nextBtn.textContent      = isLastQ ? '完了！おつかれさまでした 🎉' : '次の問題へ →';
+    if (isLastQ) nextBtn.onclick = showResult;
   } else if (currentPhase === 1) {
     // テキスト後：「日本語訳パートへ」＋「次の問題へ」
     switchBtn2.style.display = 'block';
     nextBtn.style.display    = 'block';
-    nextBtn.textContent      = '次の問題へ →';
+    nextBtn.textContent      = isLastQ ? '完了！おつかれさまでした 🎉' : '次の問題へ →';
+    if (isLastQ) nextBtn.onclick = showResult;
   } else {
-    // 日本語訳後：「次の問題へ」or「結果を見る」
+    // 日本語訳後：「次の問題へ」or「完了」
     nextBtn.style.display = 'block';
-    nextBtn.textContent   = isLastQ ? '正解を確認 ✅' : '次の問題へ →';
-    if (isLastQ) { nextBtn.onclick = showResult; }
+    nextBtn.textContent   = isLastQ ? '完了！おつかれさまでした 🎉' : '次の問題へ →';
+    if (isLastQ) nextBtn.onclick = showResult;
   }
 }
 
