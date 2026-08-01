@@ -6,17 +6,22 @@ archive.json から問題を5問取り出し、毎日のクイズ（index.html�
 3パート構成（① 音声だけ → ② 中国語テキスト → ③ 日本語訳）の
 復習ページ（{yyyymmdd}.html）を作ります。
 
-使い方の例:
-    # 先頭から5問を使って、土曜日 2026-05-30 のページを作る
-    python3 make_review.py --start 0 --date 2026-05-30
+その週の月〜金の5問は、archive.json の「日付」を見て自動で選びます。
+
+使い方:
+    # 今週分（直近の土曜日）のページを作る ← ふだんはこれだけでOK
+    python3 make_review.py
+
+    # 土曜日を指定して作る（過去の週を作り直したいときなど）
+    python3 make_review.py --date 2026-07-25
 
 引数:
-    --start  archive.json の何番目（0始まり）から使うか（省略時 0）
-    --count  何問使うか（省略時 5）
-    --date   発行する土曜日の日付 YYYY-MM-DD（ファイル名は YYYYMMDD.html になります）
+    --date   発行する土曜日の日付 YYYY-MM-DD（省略時は直近の土曜日）
+             ファイル名は YYYYMMDD.html になります
 """
 
 import argparse
+import datetime
 import json
 import os
 
@@ -480,15 +485,57 @@ __SCRIPT__
 """
 
 
-def build(start, count, date_str):
+WEEKDAY_JP = ["月", "火", "水", "木", "金", "土", "日"]
+
+
+def resolve_saturday(date_str):
+    """発行日（土曜日）を決める。省略時は「今日を含む直近の土曜日」。"""
+    if date_str:
+        try:
+            d = datetime.date.fromisoformat(date_str)
+        except ValueError:
+            raise SystemExit("日付は YYYY-MM-DD の形式で指定してください（例 2026-08-01）")
+        if d.weekday() != 5:
+            print("※ 注意: {} は{}曜日です（土曜日ではありません）".format(
+                d.isoformat(), WEEKDAY_JP[d.weekday()]))
+        return d
+    today = datetime.date.today()
+    # 今日が土曜ならそのまま。それ以外は直前の土曜まで戻る。
+    return today - datetime.timedelta(days=(today.weekday() - 5) % 7)
+
+
+def pick_week_questions(archive, saturday):
+    """その週の月〜金（土曜の5日前〜1日前）の問題を日付で選ぶ。"""
+    monday = saturday - datetime.timedelta(days=5)
+    wanted = [monday + datetime.timedelta(days=i) for i in range(5)]
+
+    by_date = {}
+    for q in archive:
+        by_date.setdefault(q["date"], q)
+
+    selected, missing = [], []
+    for d in wanted:
+        key = d.isoformat()
+        if key in by_date:
+            selected.append(by_date[key])
+        else:
+            missing.append("{}（{}）".format(key, WEEKDAY_JP[d.weekday()]))
+
+    if missing:
+        raise SystemExit(
+            "archive.json に次の日の問題が見つかりません:\n  - "
+            + "\n  - ".join(missing)
+            + "\n\n（毎日のクイズがまだ登録されていない可能性があります）"
+        )
+    return selected
+
+
+def build(date_str=None, count=5):
     with open(os.path.join(HERE, "archive.json"), encoding="utf-8") as f:
         archive = json.load(f)
 
-    selected = archive[start:start + count]
-    if len(selected) < count:
-        raise SystemExit(
-            "archive.json に問題が足りません（必要 {} 問 / 取得 {} 問）".format(count, len(selected))
-        )
+    saturday = resolve_saturday(date_str)
+    selected = pick_week_questions(archive, saturday)
 
     # archive.json では改行が「\n」という2文字で保存されているので、
     # 実際の改行に直して表示する（毎日のクイズと同じ挙動にそろえる）。
@@ -512,8 +559,7 @@ def build(start, count, date_str):
     questions_json = json.dumps(questions, ensure_ascii=False)
     script = SCRIPT.replace("__QUESTIONS__", questions_json)
 
-    y, m, d = date_str.split("-")
-    date_jp = "{}/{}/{}".format(int(y), int(m), int(d))
+    date_jp = "{}/{}/{}".format(saturday.year, saturday.month, saturday.day)
 
     html = (HTML_TEMPLATE
             .replace("__CSS__", CSS)
@@ -521,21 +567,27 @@ def build(start, count, date_str):
             .replace("__DATE_JP__", date_jp)
             .replace("__N__", str(len(questions))))
 
-    out_name = "{}{}{}.html".format(y, m, d)
+    out_name = saturday.strftime("%Y%m%d") + ".html"
     out_path = os.path.join(HERE, out_name)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
+
     print("作成しました: {}（{} 問 × 3パート）".format(out_name, len(questions)))
+    print("内容:")
+    for q, orig in zip(questions, selected):
+        d = datetime.date.fromisoformat(orig["date"])
+        print("  {}（{}） {} … {}".format(
+            d.strftime("%-m/%-d"), WEEKDAY_JP[d.weekday()], q["answer"], q["answerJapanese"]))
     return out_path
 
 
 def main():
-    p = argparse.ArgumentParser(description="週ごとの復習ページを発行します")
-    p.add_argument("--start", type=int, default=0, help="archive.json の開始位置（0始まり）")
-    p.add_argument("--count", type=int, default=5, help="使う問題数（既定5）")
-    p.add_argument("--date", required=True, help="発行する土曜日 YYYY-MM-DD")
+    p = argparse.ArgumentParser(
+        description="週ごとの復習ページを発行します（その週の月〜金5問を日付で自動選択）")
+    p.add_argument("--date", default=None,
+                   help="発行する土曜日 YYYY-MM-DD（省略時は直近の土曜日）")
     args = p.parse_args()
-    build(args.start, args.count, args.date)
+    build(args.date)
 
 
 if __name__ == "__main__":
