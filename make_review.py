@@ -15,6 +15,9 @@ archive.json から問題を5問取り出し、毎日のクイズ（index.html�
     # 土曜日を指定して作る（過去の週を作り直したいときなど）
     python3 make_review.py --date 2026-07-25
 
+    # 過去問を再掲載した週は、使う問題の「初出日」を指定する
+    python3 make_review.py --dates 2026-05-18,2026-05-26,2026-05-27,2026-05-28,2026-05-29
+
 引数:
     --date   発行する土曜日の日付 YYYY-MM-DD（省略時は直近の土曜日）
              ファイル名は YYYYMMDD.html になります
@@ -504,10 +507,12 @@ def resolve_saturday(date_str):
     return today - datetime.timedelta(days=(today.weekday() - 5) % 7)
 
 
-def pick_week_questions(archive, saturday):
-    """その週の月〜金（土曜の5日前〜1日前）の問題を日付で選ぶ。"""
-    monday = saturday - datetime.timedelta(days=5)
-    wanted = [monday + datetime.timedelta(days=i) for i in range(5)]
+def pick_week_questions(archive, saturday, wanted=None):
+    """その週の月〜金（土曜の5日前〜1日前）の問題を日付で選ぶ。
+    wanted を渡したときは、その日付の問題を選ぶ（過去問の再掲載の週など）。"""
+    if wanted is None:
+        monday = saturday - datetime.timedelta(days=5)
+        wanted = [monday + datetime.timedelta(days=i) for i in range(5)]
 
     by_date = {}
     for q in archive:
@@ -530,12 +535,21 @@ def pick_week_questions(archive, saturday):
     return selected
 
 
-def build(date_str=None, count=5):
+def parse_dates(dates_str):
+    try:
+        return [datetime.date.fromisoformat(s.strip()) for s in dates_str.split(",") if s.strip()]
+    except ValueError:
+        raise SystemExit("--dates は YYYY-MM-DD をカンマ区切りで指定してください"
+                         "（例 2026-05-18,2026-05-26）")
+
+
+def build(date_str=None, dates_str=None):
     with open(os.path.join(HERE, "archive.json"), encoding="utf-8") as f:
         archive = json.load(f)
 
     saturday = resolve_saturday(date_str)
-    selected = pick_week_questions(archive, saturday)
+    wanted = parse_dates(dates_str) if dates_str else None
+    selected = pick_week_questions(archive, saturday, wanted)
 
     # archive.json では改行が「\n」という2文字で保存されているので、
     # 実際の改行に直して表示する（毎日のクイズと同じ挙動にそろえる）。
@@ -586,8 +600,10 @@ def main():
         description="週ごとの復習ページを発行します（その週の月〜金5問を日付で自動選択）")
     p.add_argument("--date", default=None,
                    help="発行する土曜日 YYYY-MM-DD（省略時は直近の土曜日）")
+    p.add_argument("--dates", default=None,
+                   help="使う問題の初出日をカンマ区切りで指定（過去問を再掲載した週用）")
     args = p.parse_args()
-    build(args.date)
+    build(args.date, args.dates)
 
 
 if __name__ == "__main__":
